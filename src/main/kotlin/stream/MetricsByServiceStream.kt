@@ -20,8 +20,9 @@ class MetricsByServiceStream(
   topicName: String = "service-metrics"
 ) : Closeable {
 
+  fun start() = streams.startAndWaitUntilReady()
+
   fun getStore(): ReadOnlyKeyValueStore<String, List<Metric>> {
-    streams.startAndWaitUntilReady()
     return streams.store(StoreQueryParameters.fromNameAndType(
       storeName,
       QueryableStoreTypes.keyValueStore()

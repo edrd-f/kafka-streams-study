@@ -51,7 +51,7 @@ class MetricValueGenerator(
       serviceName = serviceName,
       serviceId = "$serviceName-${random.nextInt(until = 3)}",
       type = metricTypes.random(),
-      value = random.nextInt(until = 101)
+      value = 30 + random.nextInt(until = 71)
     )
   }
 }

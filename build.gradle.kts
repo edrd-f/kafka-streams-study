@@ -3,6 +3,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
   application
   kotlin("jvm") version "1.4.0"
+  id("com.github.johnrengelman.shadow") version "6.0.0"
 }
 
 repositories {
@@ -13,9 +14,11 @@ val junitVersion: String by project
 val kafkaVersion: String by project
 
 dependencies {
+  implementation(kotlin("reflect"))
   implementation("org.apache.kafka:kafka-clients:$kafkaVersion")
   implementation("org.apache.kafka:kafka-streams:$kafkaVersion")
   implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.11.2")
+  implementation("io.vertx:vertx-web:3.9.2")
 
   runtimeOnly("ch.qos.logback:logback-classic:1.2.3")
 

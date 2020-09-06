@@ -6,7 +6,7 @@
         </encoder>
     </appender>
 
-    <root level="${app.logging.level:-ERROR}">
+    <root level="${app.logging.level:-WARN}">
         <appender-ref ref="STDOUT" />
     </root>
 </configuration>
