@@ -4,8 +4,15 @@ import io.gitlab.edrd.kafka.streams.producer.MetricValueGenerator
 import io.gitlab.edrd.kafka.streams.stream.MetricsByServiceStream
 
 fun main() {
-  val valueGenerator = MetricValueGenerator().apply { start() }
+  val valueGenerator = MetricValueGenerator()
   val metricsByServiceStream = MetricsByServiceStream()
+
+  Runtime.getRuntime().addShutdownHook(Thread {
+    valueGenerator.close()
+    metricsByServiceStream.close()
+  })
+
+  valueGenerator.start()
 
   metricsByServiceStream.getStore().all().forEach { item ->
     val averageByMetricType = item.value.groupBy { it.type }.mapValues { (_, metrics) ->
@@ -18,9 +25,4 @@ fun main() {
     }
     println()
   }
-
-  Runtime.getRuntime().addShutdownHook(Thread {
-    valueGenerator.close()
-    metricsByServiceStream.close()
-  })
 }
