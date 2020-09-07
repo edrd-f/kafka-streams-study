@@ -20,6 +20,7 @@ class MetricSerde : Serde<Metric>, Serializer<Metric>, Deserializer<Metric> {
   override fun deserializer() = this
 
   override fun close() {}
+
   override fun configure(configs: MutableMap<String, *>?, isKey: Boolean) {}
 
   companion object {

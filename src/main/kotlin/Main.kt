@@ -36,20 +36,24 @@ private val metricsByServiceStream = MetricsByServiceStream()
 private fun buildResourceUsageAveragesResponse(
   serviceId: Int?,
   serviceName: String?
-): String = buildString {
-  if (serviceId != null && serviceName != null) {
-    metricsByServiceStream.getAveragesForServiceId(serviceName, serviceId)
+): String {
+  return if (serviceId != null && serviceName != null) {
+    metricsByServiceStream
+      .getAveragesForServiceId(serviceName, serviceId)
+      .entries
+      .joinToString(separator = "\n") { (metricType, average) ->
+        "${metricType.abbreviation}: $average%"
+      }
+  } else buildAllServicesAverages()
+}
+
+private fun buildAllServicesAverages() = buildString {
+  serviceNames.forEach { serviceName ->
+    appendLine("[$serviceName]")
+    metricsByServiceStream.getAveragesForService(serviceName)
       .forEach { (metricType, average) ->
         appendLine("${metricType.abbreviation}: $average%")
       }
-  } else {
-    serviceNames.forEach { serviceName ->
-      appendLine("[$serviceName]")
-      metricsByServiceStream.getAveragesForService(serviceName)
-        .forEach { (metricType, average) ->
-          appendLine("${metricType.abbreviation}: $average%")
-        }
-      appendLine()
-    }
+    appendLine()
   }
 }
