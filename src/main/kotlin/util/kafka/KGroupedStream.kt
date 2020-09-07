@@ -33,5 +33,6 @@ internal fun <K, V, VR> KTable<K, V>.mapValues(
       .`as`<K, VR, KeyValueStore<Bytes, ByteArray>>(storeName)
       .withKeySerde(keySerde)
       .withValueSerde(valueSerde)
+      .withLoggingDisabled()
   )
 }

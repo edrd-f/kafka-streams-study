@@ -13,7 +13,7 @@ class Producer(
   private val topicName: String = "service-metrics"
 ) : Closeable {
   fun send(metric: Metric) {
-    ProducerRecord(topicName, metric.serviceName, metric).let(kafkaProducer::send)
+    ProducerRecord(topicName, metric.service.name, metric).let(kafkaProducer::send)
   }
 
   override fun close() {

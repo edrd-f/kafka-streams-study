@@ -17,7 +17,12 @@ fun main() {
   metricsByServiceStream.start()
 
   HttpServer().start { request ->
-    val averagesResponse = measureTimedValue { buildResourceUsageAveragesResponse() }
+    val serviceId = request.getParam("serviceId")?.toIntOrNull()
+    val serviceName = request.getParam("serviceName")
+
+    val averagesResponse = measureTimedValue {
+      buildResourceUsageAveragesResponse(serviceId, serviceName)
+    }
 
     request.response()
       .end(averagesResponse.value +
@@ -28,12 +33,23 @@ fun main() {
 private val valueGenerator = MetricValueGenerator()
 private val metricsByServiceStream = MetricsByServiceStream()
 
-private fun buildResourceUsageAveragesResponse(): String = buildString {
-  serviceNames.forEach { serviceName ->
-    appendLine("[$serviceName]")
-    metricsByServiceStream.getAveragesForService(serviceName).forEach { (metricType, average) ->
-      appendLine("${metricType.abbreviation}: $average%")
+private fun buildResourceUsageAveragesResponse(
+  serviceId: Int?,
+  serviceName: String?
+): String = buildString {
+  if (serviceId != null && serviceName != null) {
+    metricsByServiceStream.getAveragesForServiceId(serviceName, serviceId)
+      .forEach { (metricType, average) ->
+        appendLine("${metricType.abbreviation}: $average%")
+      }
+  } else {
+    serviceNames.forEach { serviceName ->
+      appendLine("[$serviceName]")
+      metricsByServiceStream.getAveragesForService(serviceName)
+        .forEach { (metricType, average) ->
+          appendLine("${metricType.abbreviation}: $average%")
+        }
+      appendLine()
     }
-    appendLine()
   }
 }

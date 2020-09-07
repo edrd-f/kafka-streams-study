@@ -2,6 +2,7 @@ package io.gitlab.edrd.kafka.streams.stream
 
 import io.gitlab.edrd.kafka.streams.data.CountAndSum
 import io.gitlab.edrd.kafka.streams.data.Metric
+import io.gitlab.edrd.kafka.streams.data.Service
 import io.gitlab.edrd.kafka.streams.serialization.MetricSerde
 import io.gitlab.edrd.kafka.streams.serialization.serde
 import io.gitlab.edrd.kafka.streams.util.kafka.aggregate
@@ -12,8 +13,10 @@ import org.apache.kafka.streams.KafkaStreams
 import org.apache.kafka.streams.StoreQueryParameters
 import org.apache.kafka.streams.StreamsBuilder
 import org.apache.kafka.streams.kstream.Consumed
+import org.apache.kafka.streams.kstream.Grouped
 import org.apache.kafka.streams.kstream.KStream
 import org.apache.kafka.streams.state.QueryableStoreTypes
+import org.apache.kafka.streams.state.ReadOnlyKeyValueStore
 import java.io.Closeable
 import java.util.Properties
 
@@ -23,14 +26,39 @@ class MetricsByServiceStream(
 ) : Closeable {
   fun start() = streams.startAndWaitUntilReady()
 
-  fun getAveragesForService(serviceName: String): Map<Metric.Type, Int> {
-    val storeType = QueryableStoreTypes.keyValueStore<String, Int>()
-    val averageCpu = streams.store(StoreQueryParameters.fromNameAndType("AverageCpu", storeType))
-    val averageMem = streams.store(StoreQueryParameters.fromNameAndType("AverageMem", storeType))
-    return mapOf(
-      Metric.Type.Cpu to averageCpu.get(serviceName),
-      Metric.Type.Memory to averageMem.get(serviceName)
-    )
+  fun getAveragesForService(serviceName: String): Map<Metric.Type, Long> {
+    val storeType = QueryableStoreTypes.keyValueStore<Service, Int>()
+
+    return Metric.Type.values().associate { type ->
+      val averages = streams.store(
+        StoreQueryParameters.fromNameAndType("Average${type.abbreviation}", storeType)
+      )
+      type to calculateAverageForAllServiceIds(averages, serviceName)
+    }
+  }
+
+  fun getAveragesForServiceId(name: String, id: Int): Map<Metric.Type, Long> {
+    val storeType = QueryableStoreTypes.keyValueStore<Service, Int>()
+
+    return Metric.Type.values().associate { type ->
+      val averages = streams.store(
+        StoreQueryParameters.fromNameAndType("Average${type.abbreviation}", storeType)
+      )
+      type to averages.get(Service(id, name)).toLong()
+    }
+  }
+
+  private fun calculateAverageForAllServiceIds(
+    store: ReadOnlyKeyValueStore<Service, Int>,
+    serviceName: String
+  ): Long {
+    return store.all()
+      .asSequence()
+      .filter { it.key.name == serviceName }
+      .fold(CountAndSum(0, 0)) { accumulator, item ->
+        CountAndSum(accumulator.count + 1, accumulator.sum + item.value)
+      }
+      .run { sum / count.coerceAtLeast(1) }
   }
 
   override fun close() = streams.close()
@@ -48,18 +76,18 @@ class MetricsByServiceStream(
     storeName: String
   ) {
     stream.filter { _, value -> value.type == metricType }
-      .groupByKey()
+      .groupBy({ _, metric -> metric.service }, Grouped.with(serde<Service>(), serde<Metric>()))
       .aggregate(
         initializer = { CountAndSum(0, 0) },
         aggregator = { _, metric, countAndSum ->
           CountAndSum(countAndSum.count + 1, countAndSum.sum + metric.value)
         },
-        keySerde = Serdes.String(),
+        keySerde = serde<Service>(),
         valueSerde = serde(),
       ).mapValues(
         mapper = { (it.sum / it.count).toInt() },
         storeName = storeName,
-        keySerde = Serdes.String(),
+        keySerde = serde<Service>(),
         valueSerde = Serdes.Integer()
       )
   }

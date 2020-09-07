@@ -1,6 +1,7 @@
 package io.gitlab.edrd.kafka.streams.producer
 
 import io.gitlab.edrd.kafka.streams.data.Metric
+import io.gitlab.edrd.kafka.streams.data.Service
 import io.gitlab.edrd.kafka.streams.serviceNames
 import java.io.Closeable
 import java.util.concurrent.CountDownLatch
@@ -12,7 +13,6 @@ class MetricValueGenerator(
   delay: Duration = 100.milliseconds,
   topicName: String = "service-metrics"
 ) : Closeable {
-
   fun start() = thread.start()
 
   override fun close() {
@@ -47,8 +47,7 @@ class MetricValueGenerator(
     val serviceName = serviceNames.random()
     Metric(
       time = System.currentTimeMillis(),
-      serviceName = serviceName,
-      serviceId = "$serviceName-${random.nextInt(until = 3)}",
+      service = Service(id = random.nextInt(until = 3), serviceName),
       type = metricTypes.random(),
       value = 30 + random.nextInt(until = 71)
     )
