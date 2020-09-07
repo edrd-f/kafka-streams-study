@@ -27,24 +27,27 @@ class MetricsByServiceStream(
   fun start() = streams.startAndWaitUntilReady()
 
   fun getAveragesForService(serviceName: String): Map<Metric.Type, Long> {
-    val storeType = QueryableStoreTypes.keyValueStore<Service, Int>()
-
-    return Metric.Type.values().associate { type ->
-      val averages = streams.store(
-        StoreQueryParameters.fromNameAndType("Average${type.abbreviation}", storeType)
-      )
-      type to calculateAverageForAllServiceIds(averages, serviceName)
+    return mapWithValueForEachMetricType { averages ->
+      calculateAverageForAllServiceIds(averages, serviceName)
     }
   }
 
   fun getAveragesForServiceId(name: String, id: Int): Map<Metric.Type, Long> {
+    return mapWithValueForEachMetricType { averages ->
+      averages.get(Service(id, name)).toLong()
+    }
+  }
+
+  private fun mapWithValueForEachMetricType(
+    valueSupplier: (store: ReadOnlyKeyValueStore<Service, Int>) -> Long
+  ): Map<Metric.Type, Long> {
     val storeType = QueryableStoreTypes.keyValueStore<Service, Int>()
 
     return Metric.Type.values().associate { type ->
       val averages = streams.store(
         StoreQueryParameters.fromNameAndType("Average${type.abbreviation}", storeType)
       )
-      type to averages.get(Service(id, name)).toLong()
+      type to valueSupplier(averages)
     }
   }
 
