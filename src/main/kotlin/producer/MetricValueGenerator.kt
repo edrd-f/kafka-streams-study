@@ -1,6 +1,7 @@
 package io.gitlab.edrd.kafka.streams.producer
 
 import io.gitlab.edrd.kafka.streams.data.Metric
+import io.gitlab.edrd.kafka.streams.serviceNames
 import java.io.Closeable
 import java.util.concurrent.CountDownLatch
 import kotlin.random.Random
@@ -37,8 +38,6 @@ class MetricValueGenerator(
   }
 
   private val producer = Producer(topicName = topicName)
-
-  private val serviceNames = listOf("dashboard", "consumer", "gateway")
 
   private val random = Random(seed = System.currentTimeMillis())
 

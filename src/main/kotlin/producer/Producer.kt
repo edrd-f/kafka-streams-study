@@ -12,7 +12,6 @@ class Producer(
   private val bootstrapServer: String = "localhost:9092",
   private val topicName: String = "service-metrics"
 ) : Closeable {
-
   fun send(metric: Metric) {
     ProducerRecord(topicName, metric.serviceName, metric).let(kafkaProducer::send)
   }

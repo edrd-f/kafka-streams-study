@@ -7,10 +7,8 @@ data class Metric(
   val type: Type,
   val value: Int
 ) {
-  enum class Type {
-    Cpu {
-      override fun toString() = "CPU"
-    },
-    Memory
+  enum class Type(val abbreviation: String) {
+    Cpu(abbreviation = "Cpu"),
+    Memory(abbreviation = "Mem")
   }
 }
